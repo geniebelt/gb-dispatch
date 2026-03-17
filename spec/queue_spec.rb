@@ -147,4 +147,73 @@ describe GBDispatch::Queue do
       expect(a).to eq :bar
     end
   end
+
+  context 'activerecord without rails' do
+    before(:each) do
+      module ActiveRecord
+        class Base
+          class DummyConnectionPool
+            def with_connection
+              yield
+            end
+
+            def force_new_connection
+              with_connection do
+                yield
+              end
+            end
+          end
+
+          def self.connection_pool
+            @pool ||= DummyConnectionPool.new
+          end
+
+          def self.clear_active_connections!
+            true
+          end
+        end
+      end
+    end
+
+    after(:each) do
+      begin
+        Kernel.send :remove_const, 'ActiveRecord'
+      rescue
+        nil
+      end
+      begin
+        Object.send :remove_const, 'ActiveRecord'
+      rescue
+        nil
+      end
+    end
+
+    it 'should wrap execution with connection pool when activerecord is present without rails' do
+      a = :foo
+      queue = GBDispatch::Queue.new(:test)
+      expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
+      expect(ActiveRecord::Base).to receive(:clear_active_connections!)
+      queue.await.perform_now do
+        a = :bar
+      end
+      expect(a).to eq :bar
+    end
+
+    it 'should execute lambda and wrap with connection pool' do
+      a = :foo
+      queue = GBDispatch::Queue.new(:test)
+      expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
+      expect(ActiveRecord::Base).to receive(:clear_active_connections!)
+      queue.await.perform_now ->() { a = :bar }
+      expect(a).to eq :bar
+    end
+
+    it 'should return exception object on failure without rails' do
+      queue = GBDispatch::Queue.new(:test)
+      a = queue.perform_now ->() do
+        raise StandardError.new 'Test error'
+      end
+      expect(a).to be_kind_of StandardError
+    end
+  end
 end

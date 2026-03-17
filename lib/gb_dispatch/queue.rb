@@ -39,6 +39,17 @@ module GBDispatch
             end
           end
         end
+      elsif defined?(ActiveRecord::Base)
+        require 'gb_dispatch/active_record_patch'
+        thread_block = ->() do
+          begin
+            ActiveRecord::Base.connection_pool.force_new_connection do
+              block ? block.call : yield
+            end
+          ensure
+            ActiveRecord::Base.clear_active_connections!
+          end
+        end
       else
         thread_block = block ? block : ->() { yield }
       end
