@@ -37,11 +37,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  bundler (>= 2.2)
   concurrent-ruby-ext
   gb_dispatch!
   rake (>= 13.2)
-  rspec (~> 3.10, >= 0)
+  rspec (~> 3.10)
   simplecov
 
 BUNDLED WITH
