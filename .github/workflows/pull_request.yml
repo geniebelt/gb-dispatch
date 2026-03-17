@@ -24,7 +24,7 @@ jobs:
       - name: Install gems
         run: |
           gem install bundler
-          bundle install --with development test --deployment --jobs 16
+          bundle install --with development test
       - name: Runs tests
         run: |
           bundle exec rspec -f j -o rspec_results.json -f p
