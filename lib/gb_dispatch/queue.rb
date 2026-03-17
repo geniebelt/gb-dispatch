@@ -20,27 +20,12 @@ module GBDispatch
     # @return [Object, Exception] returns value of executed block or exception if block execution failed.
     def perform_now(block=nil)
       Thread.current[:name] ||= name
-      if defined?(Rails) && defined?(ActiveRecord::Base)
-        require 'gb_dispatch/active_record_patch'
-        thread_block = ->() do
-          if Rails::VERSION::MAJOR < 5
-            begin
-              ActiveRecord::Base.connection_pool.force_new_connection do
-                block ? block.call : yield
-              end
-            ensure
-              ActiveRecord::Base.clear_active_connections!
-            end
-          else
-            Rails.application.executor.wrap do
-              ActiveRecord::Base.connection_pool.force_new_connection do
-                block ? block.call : yield
-              end
-            end
+      thread_block = ->() do
+        with_rails_executor do
+          with_connection_pool do
+            block ? block.call : yield
           end
         end
-      else
-        thread_block = block ? block : ->() { yield }
       end
       begin
         Runner.execute thread_block, name: name
@@ -56,8 +41,9 @@ module GBDispatch
     # @return [Concurrent::ScheduledTask]
     def perform_after(time, block=nil)
       task = Concurrent::ScheduledTask.new(time) do
-        block = ->(){ yield } unless block
-        self.async.perform_now block
+        self.async.perform_now do
+          block ? block.call : yield
+        end
       end
       task.execute
       task
@@ -65,6 +51,29 @@ module GBDispatch
 
     def to_s
       self.name.to_s
+    end
+
+    private
+
+    def with_connection_pool
+      return yield unless defined?(ActiveRecord::Base)
+
+      require 'gb_dispatch/active_record_patch'
+      begin
+      ActiveRecord::Base.connection_pool.with_connection do
+        yield
+      end
+      ensure
+        ActiveRecord::Base.clear_active_connections!
+      end
+    end
+
+    def with_rails_executor
+      return yield unless defined?(Rails) && Rails::VERSION::MAJOR >= 5
+
+      Rails.application.executor.wrap do
+        yield
+      end
     end
   end
 end

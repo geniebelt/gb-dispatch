@@ -17,7 +17,6 @@
 #
 # See http://rubydoc.info/gems/rspec-core/RSpec/Core/Configuration
 require 'simplecov'
-require 'ostruct'
 SimpleCov.start do
   add_filter '/spec/'
 end

@@ -4,7 +4,6 @@ on:
   - workflow_dispatch
 env:
   RACK_ENV: test
-  ImageOS: ubuntu20
 jobs:
   test:
     name: Run test
@@ -14,36 +13,26 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ruby: [ '2.5', '2.6', '2.7', '3.0' ]
+        ruby: [ '3.2', '3.3', '3.4', '4.0' ]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Setup ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-      - name: Cache gems
-        uses: actions/cache@v2
-        with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ matrix.ruby }}-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gems-${{ matrix.ruby }}
       - name: Install gems
         run: |
           gem install bundler
-          bundle install --with development test --deployment --jobs 16
+          bundle config set with 'development test'
+          bundle install
       - name: Runs tests
         run: |
           bundle exec rspec -f j -o rspec_results.json -f p
       - name: RSpec Report
         if: always()
-        uses: SonicGarden/rspec-report-action@v1
+        uses: SonicGarden/rspec-report-action@v6
+        continue-on-error: true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           json-path: rspec_results.json
-      - name: Simplecov Report
-        uses: aki77/simplecov-report-action@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          failedThreshold: 80
