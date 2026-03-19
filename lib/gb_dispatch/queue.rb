@@ -59,12 +59,8 @@ module GBDispatch
       return yield unless defined?(ActiveRecord::Base)
 
       require 'gb_dispatch/active_record_patch'
-      begin
       ActiveRecord::Base.connection_pool.with_connection do
         yield
-      end
-      ensure
-        ActiveRecord::Base.clear_active_connections!
       end
     end
 

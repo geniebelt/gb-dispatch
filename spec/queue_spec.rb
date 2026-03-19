@@ -140,7 +140,6 @@ describe GBDispatch::Queue do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
       expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
-      expect(ActiveRecord::Base).to receive(:clear_active_connections!)
       queue.await.perform_now do
         a = :bar
       end
@@ -192,7 +191,6 @@ describe GBDispatch::Queue do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
       expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
-      expect(ActiveRecord::Base).to receive(:clear_active_connections!)
       queue.await.perform_now do
         a = :bar
       end
@@ -203,7 +201,6 @@ describe GBDispatch::Queue do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
       expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
-      expect(ActiveRecord::Base).to receive(:clear_active_connections!)
       queue.await.perform_now ->() { a = :bar }
       expect(a).to eq :bar
     end
