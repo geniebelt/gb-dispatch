@@ -59,7 +59,15 @@ module GBDispatch
       return yield unless defined?(ActiveRecord::Base)
 
       require 'gb_dispatch/active_record_patch'
-      ActiveRecord::Base.connection_pool.with_connection do
+      # `force_new_connection` (monkey-patch in active_record_patch.rb) temporarily
+      # nils `@lock_thread` on the pool so a background worker thread gets its
+      # own connection instead of inheriting the caller thread's cached one.
+      # Plain `with_connection` respects the lock, which under Rails
+      # `use_transactional_fixtures` hands the worker the test thread's
+      # in-transaction connection via `@thread_cached_conns`; both threads then
+      # race on the same Postgres socket and produce
+      # `PG::UnableToSend: another command is already in progress`.
+      ActiveRecord::Base.connection_pool.force_new_connection do
         yield
       end
     end
