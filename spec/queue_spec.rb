@@ -139,7 +139,7 @@ describe GBDispatch::Queue do
     it 'should wrap execution with connection pool' do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
-      expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
+      expect(ActiveRecord::Base.connection_pool).to receive(:force_new_connection).and_call_original
       queue.await.perform_now do
         a = :bar
       end
@@ -190,7 +190,7 @@ describe GBDispatch::Queue do
     it 'should wrap execution with connection pool when activerecord is present without rails' do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
-      expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
+      expect(ActiveRecord::Base.connection_pool).to receive(:force_new_connection).and_call_original
       queue.await.perform_now do
         a = :bar
       end
@@ -200,7 +200,7 @@ describe GBDispatch::Queue do
     it 'should execute lambda and wrap with connection pool' do
       a = :foo
       queue = GBDispatch::Queue.new(:test)
-      expect(ActiveRecord::Base.connection_pool).to receive(:with_connection).and_call_original
+      expect(ActiveRecord::Base.connection_pool).to receive(:force_new_connection).and_call_original
       queue.await.perform_now ->() { a = :bar }
       expect(a).to eq :bar
     end

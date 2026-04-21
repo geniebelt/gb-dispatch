@@ -59,7 +59,18 @@ module GBDispatch
       return yield unless defined?(ActiveRecord::Base)
 
       require 'gb_dispatch/active_record_patch'
-      ActiveRecord::Base.connection_pool.with_connection do
+      # `force_new_connection` is a monkey-patch in active_record_patch.rb
+      # that keeps background-thread connection handling safe across Rails
+      # versions:
+      #
+      # * On Rails 7.2+ with `@pinned_connection` (`use_transactional_fixtures`),
+      #   it serializes access to the pinned connection via its per-connection
+      #   mutex so worker and caller threads can't race on the same pg socket.
+      # * On Rails 7.1 with `@lock_thread`, it nils the lock so the worker
+      #   gets a fresh connection instead of inheriting the caller's cached one.
+      # * Otherwise (production, older AR, non-Rails), it delegates to
+      #   plain `with_connection`.
+      ActiveRecord::Base.connection_pool.force_new_connection do
         yield
       end
     end
